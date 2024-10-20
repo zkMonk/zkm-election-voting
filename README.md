@@ -1,4 +1,8 @@
-# ZKM Project Template
+# ZKM Hackathon Project
+
+This project was forked and cloned from the [zkm-project-template](https://github.com/hswopeams/zkm-project-template/tree/main)
+
+See this [section](#running-the-project-in-a-docker-container) for running the project in a Docker container.
 
 This is a template for creating an end-to-end ZKM project which can generate the EVM-Compatible proof and the on chain verification contract.
 
@@ -75,14 +79,14 @@ There are two ways to prove the guest program:
 - RPC for a blockchain (eg, sepolia)
 
 > [!NOTE]
-> All actions are assumed to be from the base directory `zkm-project-template`
+> All actions are assumed to be from the base directory `zkm-hackathon`
 
 ## Running the project
 
 ### 0. Download the repo
 
 ```sh
-git clone https://github.com/zkMIPS/zkm-project-template.git
+git clone https://github.com/hswopeams/zkm-hackathon.git
 ```
 
 ### 1. Build the guest program ELF
@@ -92,7 +96,7 @@ Please refer to [this](guest-program/README.md) guide.
 ### 2. Build the host program
 
 ```sh
-cd zkm-project-template
+cd zkm-hackathon
 sdk/src/local/libsnark/compile.sh  # compile snark library
 cargo build --release              # build host programs
 ```
@@ -105,7 +109,7 @@ If the program executes successfully, it will generate one binary files in `targ
 ### 3. Generate groth16 proof and verifier contract
 
 ```sh
-cd zkm-project-template/host-program
+cd zkm-hackathon/host-program
 ```
 
 > [!NOTE]
@@ -232,7 +236,7 @@ curl -L https://foundry.paradigm.xyz | bash
 #### Verify the snark proof generateing in the step 3
 
 ```
-cd  zkm-project-template/contracts
+cd  zkm-hackathon/contracts
 forge test
 ```
 
@@ -284,9 +288,31 @@ Estimated amount required: 0.000000044083108418 ETH
 
 SIMULATION COMPLETE. To broadcast these transactions, add --broadcast and wallet configuration(s) to the previous command. See forge script --help for more.
 
-Transactions saved to: /mnt/data/zkm-project-template/contracts/broadcast/verifier.s.sol/11155111/dry-run/run-latest.json
+Transactions saved to: /mnt/data/zkm-hackathon/contracts/broadcast/verifier.s.sol/11155111/dry-run/run-latest.json
 
-Sensitive values saved to: /mnt/data/zkm-project-template/contracts/cache/verifier.s.sol/11155111/dry-run/run-latest.json
+Sensitive values saved to: /mnt/data/zkm-hackathon/contracts/cache/verifier.s.sol/11155111/dry-run/run-latest.json
 ```
 
 For more details, please refer to [this](contracts/README.md) guide.
+
+## Running the project in a Docker container
+First, install docker on your host machine. See [here](https://docs.docker.com/engine/install/) for instructions.
+
+Cone the project using the command 
+```sh
+git clone https://github.com/hswopeams/zkm-hackathon.git
+```
+
+Then run the following command to build the image:
+```
+docker build -t zkm/zkmips:compile .
+
+```
+
+Then run this command to start a container using the image. This command will automatically open a terminal inside the container.
+```
+docker run -it -v $(pwd):/zkm zkm/zkmips:compile
+```
+
+ The zkm-hackathon project directory will mounted to the zkm directory inside the container.
+ Follow the instructions in this README from the [Build the guest program ELF](#1-build-the-guest-program-elf) section. Wherever the zkm-hackathon directory is specified, use the zkm directory in the container.

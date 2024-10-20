@@ -2,3 +2,14 @@
 /verifier/data/test_circuit
 /test-vectors/mips
 push.sh
+
+
+# Ignore all rust target directories
+**/target
+
+# Ignore generated libsnark files
+sdk/src/local/libsnark/libsnark.h
+sdk/src/local/libsnark/libsnark.so
+
+# Ignore compiled Go binaries
+guest-program/sha2-go/sha2-go
