@@ -13,6 +13,7 @@ RUN apt-get update && apt-get install -y \
     libssl-dev \
     wget \
     vim \
+    protobuf-compiler \
     && rm -rf /var/lib/apt/lists/*
 
 # install musl cross compiler
@@ -22,6 +23,9 @@ RUN tar -xzf "mips-linux-muslsf-cross.tgz" -C "/root/.mipsrust"
 
 ENV CARGO_TARGET_MIPS_UNKNOWN_LINUX_MUSL_LINKER="/root/.mipsrust/mips-linux-muslsf-cross/bin/mips-linux-muslsf-gcc"
 ENV CARGO_TARGET_MIPS_UNKNOWN_LINUX_MUSL_RUSTFLAGS='--cfg target_os="zkvm" -C target-feature=+crt-static -C link-arg=-g'
+
+# Ensure the .cargo directory exists
+RUN mkdir -p /root/.cargo
 
 # install golang
 ENV GOLANG_VERSION=1.23.2
