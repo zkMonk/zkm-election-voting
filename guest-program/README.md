@@ -17,7 +17,7 @@ It takes a public input and a private input ,then check the hash(private input)=
 * Install the mips-rust tool(the cargo should be ~/.cargo).
 
 ```
-cd zkm-project-template
+cd zkm-hackathon
 chmod +x install_mips_rust_tool
 ./install_mips_rust_tool
 ```
@@ -25,7 +25,7 @@ chmod +x install_mips_rust_tool
 * Compile the go guest program
  
 ```
-cd zkm-project-template/guest-program/sha2-go
+cd zkm-hackathon/guest-program/sha2-go
 GOOS=linux GOARCH=mips GOMIPS=softfloat go build  -o sha2-go
 ```
 The compiled mips ELF is in the current path.
@@ -33,15 +33,15 @@ The compiled mips ELF is in the current path.
 * Compile the rust guest program
   
 ```
-cd zkm-project-template/guest-program/sha2-rust
+cd zkm-hackathon/guest-program/sha2-rust
 cargo build --target=mips-unknown-linux-musl --release
 ```
 
 or
 ```
-cd zkm-project-template/guest-program/mem-alloc-vec
+cd zkm-hackathon/guest-program/mem-alloc-vec
 cargo build --target=mips-unknown-linux-musl --release
 ```
 
-The compiled mips ELF is in the zkm-project-template/guest-program/revme/target/mips-unknown-linux-musl/release/ .
+The compiled mips ELF is in the zkm-hackathon/guest-program/revme/target/mips-unknown-linux-musl/release/ .
 
