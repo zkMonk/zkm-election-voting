@@ -13,7 +13,17 @@ Foundry consists of:
 
 https://book.getfoundry.sh/
 
+The easiest way to install Foundry is to follow the instructions for installing [foundryup](https://book.getfoundry.sh/getting-started/installation#using-foundryup) and then installing Foundery using foundryup.
+
 ## Usage
+First install the forge standard libraries submodule, as the build won't work without them:
+
+```
+cd ../zkm-hackathon
+it submodule init
+git submodule update
+
+```
 
 ### Build
 
@@ -49,10 +59,18 @@ $ anvil
 
 ### Deploy
 
+To sepolia
+
 ```shell
 $ forge script script/verifier.s.sol:VerifierScript --rpc-url https://eth-sepolia.g.alchemy.com/v2/RH793ZL_pQkZb7KttcWcTlOjPrN0BjOW --private-key df4bc5647fdb9600ceb4943d4adff3749956a8512e5707716357b13d5ee687d9
 ```
 
+To anvil
+
+```
+forge script script/verifier.s.sol:VerifierScript --rpc-url http://127.0.0.1:8545 --private-key 0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80 --broadcast
+
+```
 ### Cast
 
 ```shell
