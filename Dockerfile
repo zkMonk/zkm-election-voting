@@ -50,12 +50,12 @@ RUN ARCH=$(uname -m) && \
 
 ENV PATH=/usr/local/go/bin:$PATH
 
+
 # docker build -t zkm/zkmips:compile .
-# docker run -it --rm -v ./:/zkm zkm/zkmips:compile
+# docker run -it -v $(pwd):/zkm zkm/zkmips:compile
 # compile rust mips
 # cd /zkm/prover/examples/sha2-rust && cargo build -r --target=mips-unknown-linux-musl
 # cd /zkm/prover/examples/revme && cargo build -r --target=mips-unknown-linux-musl
 # compile go mips
 # cd /zkm/prover/examples/add-go && GOOS=linux GOARCH=mips GOMIPS=softfloat go build .
 # cd /zkm/prover/examples/sha2-go && GOOS=linux GOARCH=mips GOMIPS=softfloat go build .
-
