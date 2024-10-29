@@ -2,6 +2,7 @@
 pragma solidity ^0.8.0;
 
 import {AccessControl} from "@openzeppelin/contracts/access/AccessControl.sol";
+import "forge-std/console.sol";
 
 contract ElectionVoting is AccessControl {
     struct Office {
@@ -33,41 +34,38 @@ contract ElectionVoting is AccessControl {
     uint256 public nextCandidateId = 1;
 
     event OfficeAdded(uint256 indexed officeId, string name);
-    event CandidateAdded(
-        uint256 indexed candidateId,
-        string name,
-        uint256 indexed officeId
-    );
-    event Voted(
-        address indexed voter,
-        uint256 indexed officeId,
-        uint256 indexed candidateId
-    );
-    event VotingStarted(
-        uint256 indexed officeId,
-        uint256 startTime,
-        uint256 endTime
-    );
+    event CandidateAdded(uint256 indexed candidateId, string name, uint256 indexed officeId);
+    event Voted(address indexed voter, uint256 indexed officeId, uint256 indexed candidateId);
+    event VotingStarted(uint256 indexed officeId, uint256 startTime, uint256 endTime);
     event VotingEnded(uint256 indexed officeId, uint256 endTime);
+
+    /// @notice Custom errors
+    error VotingNotOpen(uint256 officeId);
+    error VotingPeriodAlreadyStarted(uint256 officeId);
+    error VotingPeriodEnded(uint256 officeId);
+    error InvalidOfficeName();
+    error OfficeDoesNotExistOrInactive(uint256 officeId);
+    error NoOfficesRegistered();
+    error AlreadyVotedForOffice(uint256 officeId);
+    error InvalidOfficeId(uint256 officeId);
+    error CandidateNotRunningForOffice(uint256 candidateId, uint256 officeId);
 
     modifier votingIsOpen(uint256 _officeId) {
         Office memory office = offices[_officeId];
-        require(office.isVotingOpen, "Voting is not open");
+        require(office.isVotingOpen, VotingNotOpen(_officeId));
         require(
-            block.timestamp >= office.votingStart &&
-                block.timestamp <= office.votingEnd,
-            "Voting period has ended"
+            block.timestamp >= office.votingStart && block.timestamp <= office.votingEnd, VotingPeriodEnded(_officeId)
         );
         _;
     }
 
     constructor() {
-       _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
+        _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
     }
 
-    function addOffice(
-        string memory _name
-    ) public onlyRole(DEFAULT_ADMIN_ROLE) {
+    function addOffice(string memory _name) external onlyRole(DEFAULT_ADMIN_ROLE) returns (uint256 officeId) {
+        require(bytes(_name).length > 0, InvalidOfficeName());
+
         offices[nextOfficeId] = Office({
             votingStart: 0,
             votingEnd: 0,
@@ -77,26 +75,17 @@ contract ElectionVoting is AccessControl {
             candidateIds: new uint256[](0)
         });
 
+        officeId = nextOfficeId;
         emit OfficeAdded(nextOfficeId, _name);
         nextOfficeId++;
     }
 
-    function addCandidate(
-        string memory _name,
-        uint256 _officeId
-    ) public onlyRole(DEFAULT_ADMIN_ROLE) {
+    function addCandidate(string memory _name, uint256 _officeId) external onlyRole(DEFAULT_ADMIN_ROLE) {
         Office memory office = offices[_officeId];
-        require(!office.isVotingOpen, "Cannot add candidate after voting has started");
-        require(
-            offices[_officeId].isActive,
-            "Office does not exist or is not active"
-        );
+        require(!office.isVotingOpen, VotingPeriodAlreadyStarted(_officeId));
+        require(offices[_officeId].isActive, OfficeDoesNotExistOrInactive(_officeId));
 
-        candidates[nextCandidateId] = Candidate({
-            name: _name,
-            voteCount: 0,
-            officeId: _officeId
-        });
+        candidates[nextCandidateId] = Candidate({name: _name, voteCount: 0, officeId: _officeId});
 
         offices[_officeId].candidateIds.push(nextCandidateId);
 
@@ -104,38 +93,27 @@ contract ElectionVoting is AccessControl {
         nextCandidateId++;
     }
 
-    function startVoting(
-        uint256 officeId,
-        uint256 _durationInMinutes
-    ) public onlyRole(DEFAULT_ADMIN_ROLE) {
-        Office memory office = offices[officeId];
-        require(!office.isVotingOpen, "Voting already started");
-        require(nextOfficeId > 1, "No offices registered");
+    function startVoting(uint256 _officeId, uint256 _durationInMinutes) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        Office memory office = offices[_officeId];
+        require(!office.isVotingOpen, VotingPeriodAlreadyStarted(_officeId));
+        require(nextOfficeId > 1, NoOfficesRegistered());
 
         office.votingStart = block.timestamp;
         office.votingEnd = block.timestamp + (_durationInMinutes * 1 minutes);
         office.isVotingOpen = true;
 
-        offices[officeId] = office;
+        offices[_officeId] = office;
 
-        emit VotingStarted(officeId, office.votingStart, office.votingEnd);
+        emit VotingStarted(_officeId, office.votingStart, office.votingEnd);
     }
 
-    function vote(
-        uint256 _officeId,
-        uint256 _candidateId
-    ) public votingIsOpen(_officeId) {
-        /******Check zk proof to see if the voter is eligible. Could be a modifier ****/
-
-        require(
-            !voters[msg.sender].hasVotedForOffice[_officeId],
-            "Already voted for this office"
-        );
-        require(offices[_officeId].isActive, "Invalid office ID");
-        require(
-            candidates[_candidateId].officeId == _officeId,
-            "Candidate not running for this office"
-        );
+    function vote(uint256 _officeId, uint256 _candidateId) external votingIsOpen(_officeId) {
+        /**
+         * Check zk proof to see if the voter is eligible. Could be a modifier ***
+         */
+        require(!voters[msg.sender].hasVotedForOffice[_officeId], AlreadyVotedForOffice(_officeId));
+        require(offices[_officeId].isActive, InvalidOfficeId(_officeId));
+        require(candidates[_candidateId].officeId == _officeId, CandidateNotRunningForOffice(_candidateId, _officeId));
 
         voters[msg.sender].hasVotedForOffice[_officeId] = true;
         candidates[_candidateId].voteCount++;
@@ -143,21 +121,12 @@ contract ElectionVoting is AccessControl {
         emit Voted(msg.sender, _officeId, _candidateId);
     }
 
-    function getOfficeCandidates(
-        uint256 _officeId
-    )
-        public
+    function getOfficeCandidates(uint256 _officeId)
+        external
         view
-        returns (
-            uint256[] memory candidateIds,
-            string[] memory names,
-            uint256[] memory voteCounts
-        )
+        returns (uint256[] memory candidateIds, string[] memory names, uint256[] memory voteCounts)
     {
-        require(
-            offices[_officeId].isActive,
-            "Office does not exist or is not active"
-        );
+        require(offices[_officeId].isActive, OfficeDoesNotExistOrInactive(_officeId));
 
         uint256[] memory cIds = offices[_officeId].candidateIds;
         names = new string[](cIds.length);
@@ -171,10 +140,8 @@ contract ElectionVoting is AccessControl {
         return (cIds, names, voteCounts);
     }
 
-    function getOfficeDetails(
-        uint256 _officeId
-    )
-        public
+    function getOfficeDetails(uint256 _officeId)
+        external
         view
         returns (
             uint256 votingStart,
@@ -196,14 +163,11 @@ contract ElectionVoting is AccessControl {
         );
     }
 
-    function hasVotedForOffice(
-        address _voter,
-        uint256 _officeId
-    ) public view returns (bool) {
+    function hasVotedForOffice(address _voter, uint256 _officeId) external view returns (bool) {
         return voters[_voter].hasVotedForOffice[_officeId];
     }
 
-    function getVotingTimeLeft(uint256 officeId) public view returns (uint256) {
+    function getVotingTimeLeft(uint256 officeId) external view returns (uint256) {
         Office memory office = offices[officeId];
         if (!office.isVotingOpen || block.timestamp >= office.votingEnd) {
             return 0;
