@@ -16,11 +16,11 @@ https://book.getfoundry.sh/
 The easiest way to install Foundry is to follow the instructions for installing [foundryup](https://book.getfoundry.sh/getting-started/installation#using-foundryup) and then installing Foundery using foundryup.
 
 ## Usage
-First install the forge standard libraries submodule, as the build won't work without them:
+First install submodules with dependencies used by the smart contracts, as the build won't work without them:
 
 ```
 cd ../zkm-hackathon
-it submodule init
+git submodule init
 git submodule update
 
 ```
