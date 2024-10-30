@@ -625,6 +625,60 @@ contract ElectionVotingTest is Test {
         assertEq(candidateCount, 0);
     }
 
+    function test_hasVotedForOffice_True() public {
+        // Add an office so we can start voting for it
+        uint256 officeIdPresident = electionVoting.addOffice("President");
+
+        // Add a candidate
+        uint256 candidateId = electionVoting.addCandidate(
+            "Alice",
+            officeIdPresident
+        );
+
+        // Start voting for the office
+        electionVoting.startVoting(officeIdPresident, 60);
+
+        // Set the msg.sender to a specific address
+        address voter = address(0x123);
+        vm.prank(voter);
+
+        // Vote for the candidate
+        electionVoting.vote(officeIdPresident, candidateId);
+
+        // Check if the voter has voted for the office
+        bool hasVoted = electionVoting.hasVotedForOffice(voter, officeIdPresident);
+        assertTrue(hasVoted);
+    }
+
+    function test_hasVotedForOffice_False() public {
+        // Add an office so we can start voting for it
+        uint256 officeIdPresident = electionVoting.addOffice("President");
+
+        // Add a candidate
+        uint256 candidateId = electionVoting.addCandidate(
+            "Alice",
+            officeIdPresident
+        );
+
+
+        // Start voting for the office
+        electionVoting.startVoting(officeIdPresident, 60);
+
+        // Set voter address
+        address voter = address(0x123);
+
+        // Set the msg.sender to a specific address
+        address voter2 = address(0x456);
+        vm.prank(voter2);
+
+        // Vote for the candidate
+        electionVoting.vote(officeIdPresident, candidateId);
+
+        // Check if the voter has voted for the office
+        bool hasVoted = electionVoting.hasVotedForOffice(voter, officeIdPresident);
+        assertFalse(hasVoted);
+    }
+
     
 }
 
