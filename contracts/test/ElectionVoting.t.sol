@@ -60,4 +60,45 @@ contract ElectionVotingTest is Test {
         vm.expectRevert(abi.encodeWithSignature("InvalidOfficeName()"));
         electionVoting.addOffice("");
     }
+
+     function test_AddCandidate() public {
+        // Add an office so candidate can run for it
+        uint256 officeIdPresident = electionVoting.addOffice("President");
+
+        // Expect the CandidateAdded event
+        vm.expectEmit(true, false, true, true);
+        emit ElectionVoting.CandidateAdded(1, "Alice", officeIdPresident);
+
+        // Add a candidate
+        uint256 candidateId = electionVoting.addCandidate("Alice", officeIdPresident);
+        assertEq(candidateId, 1);
+
+        // Access the Candidate struct using the getter function
+        (uint256 voteCount, uint256 officeId, string memory name) = electionVoting.candidates(candidateId);
+        //ElectionVoting.Candidate memory candidate = ElectionVoting.Candidate(name, voteCount, officeId);
+
+        // Check the members of the Candidate struct
+        assertEq(name, "Alice");
+        assertEq(voteCount, 0);
+        assertEq(officeId, officeIdPresident);
+    }
+
+    function test_RevertAddCandidate_VotingPeriodAlreadyStarted() public {
+        // Add an office so candidate can run for it
+        uint256 officeIdPresident = electionVoting.addOffice("President");
+
+        // Start voting for the office
+        electionVoting.startVoting(officeIdPresident, 60);
+
+        // Expect the VotingPeriodAlreadyStarted custom error
+        vm.expectRevert(abi.encodeWithSignature("VotingPeriodAlreadyStarted(uint256)", officeIdPresident));
+        electionVoting.addCandidate("Alice", 1);
+    }
+
+    function test_RevertAddCandidate_OfficeDoesNotExistOrInactive() public {
+        // Expect the OfficeDoesNotExistOrInactive custom error
+        vm.expectRevert(abi.encodeWithSignature("OfficeDoesNotExistOrInactive(uint256)", 1));
+        electionVoting.addCandidate("Alice", 1);
+    }
+    
 }

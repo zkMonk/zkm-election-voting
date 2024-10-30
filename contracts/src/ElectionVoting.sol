@@ -80,7 +80,7 @@ contract ElectionVoting is AccessControl {
         nextOfficeId++;
     }
 
-    function addCandidate(string memory _name, uint256 _officeId) external onlyRole(DEFAULT_ADMIN_ROLE) {
+    function addCandidate(string memory _name, uint256 _officeId) external onlyRole(DEFAULT_ADMIN_ROLE) returns (uint256 candidateId) {
         Office memory office = offices[_officeId];
         require(!office.isVotingOpen, VotingPeriodAlreadyStarted(_officeId));
         require(offices[_officeId].isActive, OfficeDoesNotExistOrInactive(_officeId));
@@ -89,14 +89,17 @@ contract ElectionVoting is AccessControl {
 
         offices[_officeId].candidateIds.push(nextCandidateId);
 
-        emit CandidateAdded(nextCandidateId, _name, _officeId);
+        candidateId = nextCandidateId;
+        emit CandidateAdded(candidateId, _name, _officeId);
         nextCandidateId++;
     }
 
     function startVoting(uint256 _officeId, uint256 _durationInMinutes) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        require(_officeId > 0, InvalidOfficeId(_officeId));
+
         Office memory office = offices[_officeId];
         require(!office.isVotingOpen, VotingPeriodAlreadyStarted(_officeId));
-        require(nextOfficeId > 1, NoOfficesRegistered());
+      
 
         office.votingStart = block.timestamp;
         office.votingEnd = block.timestamp + (_durationInMinutes * 1 minutes);
