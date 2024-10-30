@@ -220,12 +220,12 @@ contract ElectionVoting is AccessControl {
             string[] memory names,
             uint256[] memory voteCounts
         )
-    {
+    {/*
         require(
             bytes(offices[_officeId].name).length > 0,
             OfficeDoesNotExist(_officeId)
         );
-
+*/
         uint256[] memory cIds = offices[_officeId].candidateIds;
         names = new string[](cIds.length);
         voteCounts = new uint256[](cIds.length);

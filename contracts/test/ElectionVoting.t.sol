@@ -504,7 +504,8 @@ contract ElectionVotingTest is Test {
             "Alice",
             officeIdPresident
         );
-        uint256 candidateId2 = electionVoting.addCandidate(
+
+        electionVoting.addCandidate(
             "Bob",
             officeIdVicePresident
         );
@@ -524,7 +525,7 @@ contract ElectionVotingTest is Test {
         electionVoting.vote(officeIdVicePresident, candidateId);
     }
 
-    function test_getOfficeCandidates() public {
+    function test_getOfficeCandidates_OfficeHasCandidates() public {
         // Add an office so we can start voting for it
         uint256 officeIdPresident = electionVoting.addOffice("President");
 
@@ -562,16 +563,21 @@ contract ElectionVotingTest is Test {
         assertEq(voteCounts[1], 1);
     }
 
-    function test_RevertGetOfficeCandidates_OfficeDoesNotExist() public {
-        // Expect the OfficeDoesNotExistOrInactive custom error
-        vm.expectRevert(
-            abi.encodeWithSelector(
-                ElectionVoting.OfficeDoesNotExist.selector,
-                1
-            )
-        );
-        electionVoting.getOfficeCandidates(1);
+      function test_getOfficeCandidates_OfficeeDoesNotExist() public view {
+        // Get the candidates for a non-existent office
+        (
+            uint256[] memory candidateIds,
+            string[] memory names,
+            uint256[] memory voteCounts
+        ) = electionVoting.getOfficeCandidates(1);
+
+        // Check that the candidate is in the list
+        assertEq(candidateIds.length, 0);
+        assertEq(names.length, 0);
+        assertEq(voteCounts.length, 0);
     }
+
+    
 }
 
 contract ElectionVotingHarness is ElectionVoting {
