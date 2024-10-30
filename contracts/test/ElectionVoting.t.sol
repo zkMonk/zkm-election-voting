@@ -266,7 +266,6 @@ contract ElectionVotingTest is Test {
         // Start voting for the office
         electionVoting.startVoting(officeId, 60);
 
-        
         (
             uint256 votingStart,
             uint256 votingEnd,
@@ -345,8 +344,6 @@ contract ElectionVotingTest is Test {
             uint256 candidateCountBefore
         ) = electionVoting.getOfficeDetails(officeId);
 
-      
-
         // Advance the block time by more than 60 minutes
         vm.warp(block.timestamp + (61 * 1 minutes));
 
@@ -359,7 +356,6 @@ contract ElectionVotingTest is Test {
         // End voting for the office
         electionVoting.endVoting(officeId);
 
-        
         (
             uint256 votingStart,
             uint256 votingEnd,
@@ -391,6 +387,141 @@ contract ElectionVotingTest is Test {
             )
         );
         electionVoting.endVoting(officeId);
+    }
+
+    function test_vote() public {
+        // Add an office so we can start voting for it
+        uint256 officeIdPresident = electionVoting.addOffice("President");
+
+        // Add a candidate
+        uint256 candidateId = electionVoting.addCandidate(
+            "Alice",
+            officeIdPresident
+        );
+
+        // Start voting for the office
+        electionVoting.startVoting(officeIdPresident, 60);
+
+        // Set the msg.sender to a specific address
+        address voter = address(0x123);
+        vm.prank(voter);
+
+        // Expect the VoteCast event
+        vm.expectEmit(true, true, true, true);
+        emit ElectionVoting.Voted(voter, officeIdPresident, candidateId);
+
+        // Vote for the candidate
+        electionVoting.vote(officeIdPresident, candidateId);
+
+        // Check that the candidate's vote count has increased
+        (
+            uint256 voteCount,
+            uint256 officeId,
+            string memory name
+        ) = electionVoting.candidates(candidateId);
+        assertEq(voteCount, 1);
+        assertEq(officeId, officeIdPresident);
+        assertEq(name, "Alice");
+    }
+
+    function test_RevertVote_VotingPeriodNotStarted() public {
+        // Add an office so we can start voting for it
+        uint256 officeIdPresident = electionVoting.addOffice("President");
+
+        // Add a candidate
+        uint256 candidateId = electionVoting.addCandidate(
+            "Alice",
+            officeIdPresident
+        );
+
+        // Expect the VotingPeriodNotStarted custom error
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                ElectionVoting.VotingPeriodNotStarted.selector,
+                officeIdPresident
+            )
+        );
+        electionVoting.vote(officeIdPresident, candidateId);
+    }
+
+    function test_RevertVote_AlreadyVotedForOffice() public {
+        // Add an office so we can start voting for it
+        uint256 officeIdPresident = electionVoting.addOffice("President");
+
+        // Add a candidate
+        uint256 candidateId = electionVoting.addCandidate(
+            "Alice",
+            officeIdPresident
+        );
+
+        // Start voting for the office
+        electionVoting.startVoting(officeIdPresident, 60);
+
+        // Set the msg.sender to a specific address
+        address voter = address(0x123);
+        vm.prank(voter);
+
+        // Vote once
+        electionVoting.vote(officeIdPresident, candidateId);
+
+        // Expect the AlreadyVotedForOffice custom error
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                ElectionVoting.AlreadyVotedForOffice.selector,
+                voter,
+                officeIdPresident
+            )
+        );
+
+        // Set the msg.sender to a specific address
+        voter = address(0x123);
+        vm.prank(voter);
+
+        // Vote again
+        electionVoting.vote(officeIdPresident, candidateId);
+    }
+
+    function test_RevertVote_VotingPeriodNotStarted_NoOffice() public {
+        // Expect the VotingPeriodNotStarted custom error
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                ElectionVoting.VotingPeriodNotStarted.selector,
+                1
+            )
+        );
+        electionVoting.vote(1, 1);
+    }
+
+    function test_RevertVote_CandidateNotRunningForOffice() public {
+        // Add an office so we can start voting for it
+        uint256 officeIdPresident = electionVoting.addOffice("President");
+        uint256 officeIdVicePresident = electionVoting.addOffice(
+            "VicePresident"
+        );
+
+        // Add a candidate
+        uint256 candidateId = electionVoting.addCandidate(
+            "Alice",
+            officeIdPresident
+        );
+        uint256 candidateId2 = electionVoting.addCandidate(
+            "Bob",
+            officeIdVicePresident
+        );
+
+        // Start voting for the office
+        electionVoting.startVoting(officeIdPresident, 60);
+        electionVoting.startVoting(officeIdVicePresident, 60);
+
+        // Expect the CandidateNotRunningForOffice custom error
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                ElectionVoting.CandidateNotRunningForOffice.selector,
+                candidateId,
+                officeIdVicePresident
+            )
+        );
+        electionVoting.vote(officeIdVicePresident, candidateId);
     }
 }
 

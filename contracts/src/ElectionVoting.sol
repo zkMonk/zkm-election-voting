@@ -53,25 +53,19 @@ contract ElectionVoting is AccessControl {
     event VotingEnded(uint256 indexed officeId, uint256 endTime);
 
     /// @notice Custom errors
-    error VotingNotOpen(uint256 officeId);
     error VotingPeriodAlreadyStarted(uint256 officeId);
     error VotingPeriodNotStarted(uint256 officeId);
     error InvalidOfficeName();
     error OfficeDoesNotExist(uint256 officeId);
     error NoOfficesRegistered();
-    error AlreadyVotedForOffice(uint256 officeId);
+    error AlreadyVotedForOffice(address voter, uint256 officeId);
     error InvalidOfficeId(uint256 officeId);
     error CandidateNotRunningForOffice(uint256 candidateId, uint256 officeId);
     error NoCandidatesForOffice(uint256 officeId);
 
     modifier votingIsOpen(uint256 _officeId) {
         Office memory office = offices[_officeId];
-        require(office.isVotingOpen, VotingNotOpen(_officeId));
-        require(
-            block.timestamp >= office.votingStart &&
-                block.timestamp <= office.votingEnd,
-            VotingPeriodNotStarted(_officeId)
-        );
+        require(office.isVotingOpen, VotingPeriodNotStarted(_officeId));
         _;
     }
 
@@ -181,13 +175,7 @@ contract ElectionVoting is AccessControl {
 
     function endVoting(
         uint256 _officeId
-    ) external onlyRole(DEFAULT_ADMIN_ROLE) {
-        require(
-            offices[_officeId].isVotingOpen,
-            VotingPeriodNotStarted(_officeId)
-        );
-
-
+    ) external onlyRole(DEFAULT_ADMIN_ROLE) votingIsOpen(_officeId) {
         if (offices[_officeId].votingEnd <= block.timestamp) {
             offices[_officeId].isVotingOpen = false;
             emit VotingEnded(_officeId, block.timestamp);
@@ -199,16 +187,16 @@ contract ElectionVoting is AccessControl {
         uint256 _candidateId
     ) external votingIsOpen(_officeId) {
         /**
-         * Check zk proof to see if the voter is eligible. Could be a modifier ***
+         * Add check zk proof to see if the voter is eligible. Could be a modifier ***
          */
+
+        console.log("msg.sender in vote function", msg.sender);
+        console.log("voters[msg.sender].hasVotedForOffice[_officeId] at start of vote function", voters[msg.sender].hasVotedForOffice[_officeId] );
         require(
             !voters[msg.sender].hasVotedForOffice[_officeId],
-            AlreadyVotedForOffice(_officeId)
+            AlreadyVotedForOffice(msg.sender, _officeId)
         );
-        require(
-            bytes(offices[_officeId].name).length > 0,
-            OfficeDoesNotExist(_officeId)
-        );
+      
         require(
             candidates[_candidateId].officeId == _officeId,
             CandidateNotRunningForOffice(_candidateId, _officeId)
@@ -216,6 +204,8 @@ contract ElectionVoting is AccessControl {
 
         voters[msg.sender].hasVotedForOffice[_officeId] = true;
         candidates[_candidateId].voteCount++;
+
+        console.log("voters[msg.sender].hasVotedForOffice[_officeId] at end of vote function", voters[msg.sender].hasVotedForOffice[_officeId] );
 
         emit Voted(msg.sender, _officeId, _candidateId);
     }
