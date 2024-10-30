@@ -563,7 +563,7 @@ contract ElectionVotingTest is Test {
         assertEq(voteCounts[1], 1);
     }
 
-      function test_getOfficeCandidates_OfficeeDoesNotExist() public view {
+    function test_getOfficeCandidates_OfficeDoesNotExist() public view {
         // Get the candidates for a non-existent office
         (
             uint256[] memory candidateIds,
@@ -575,6 +575,54 @@ contract ElectionVotingTest is Test {
         assertEq(candidateIds.length, 0);
         assertEq(names.length, 0);
         assertEq(voteCounts.length, 0);
+    }
+
+    function test_getOfficeDetails_OfficeExists() public {
+        // Add an office so we can start voting for it
+        uint256 officeIdPresident = electionVoting.addOffice("President");
+
+        // Add a candidate
+      electionVoting.addCandidate(
+            "Alice",
+            officeIdPresident
+        );
+
+        // Start voting for the office
+        electionVoting.startVoting(officeIdPresident, 60);
+
+        // Get the office details
+        (
+            uint256 votingStart,
+            uint256 votingEnd,
+            bool isVotingOpen,
+            string memory name,
+            uint256 candidateCount
+        ) = electionVoting.getOfficeDetails(officeIdPresident);
+
+        // Check the members of the Office struct
+        assertEq(votingStart, block.timestamp);
+        assertEq(votingEnd, block.timestamp + (60 * 1 minutes));
+        assertTrue(isVotingOpen);
+        assertEq(name, "President");
+        assertEq(candidateCount, 1);
+    }
+
+    function test_getOfficeDetails_OfficeDoesNotExist() public view {
+        // Get the office details
+        (
+            uint256 votingStart,
+            uint256 votingEnd,
+            bool isVotingOpen,
+            string memory name,
+            uint256 candidateCount
+        ) = electionVoting.getOfficeDetails(1);
+
+        // Check the members of the Office struct
+        assertEq(votingStart, 0);
+        assertEq(votingEnd, 0);
+        assertFalse(isVotingOpen);
+        assertEq(name, "");
+        assertEq(candidateCount, 0);
     }
 
     
