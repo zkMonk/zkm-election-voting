@@ -45,7 +45,6 @@ contract ElectionVotingTest is Test {
         uint256 officeId = electionVoting.addOffice("President");
         assertEq(officeId, 1);
 
-        // Access the Office struct members directly from the mapping
         (
             uint256 votingStart,
             uint256 votingEnd,
@@ -267,7 +266,7 @@ contract ElectionVotingTest is Test {
         // Start voting for the office
         electionVoting.startVoting(officeId, 60);
 
-        // Access the Office struct members directly from the mapping
+        
         (
             uint256 votingStart,
             uint256 votingEnd,
@@ -320,9 +319,78 @@ contract ElectionVotingTest is Test {
 
         // Expect the NoCandidatesForOffice custom error
         vm.expectRevert(
-            abi.encodeWithSelector(ElectionVoting.NoCandidatesForOffice.selector, officeId)
+            abi.encodeWithSelector(
+                ElectionVoting.NoCandidatesForOffice.selector,
+                officeId
+            )
         );
         electionVoting.startVoting(officeId, 60);
+    }
+
+    function test_EndVoting() public {
+        // Add an office so we can start voting for it
+        uint256 officeId = electionVoting.addOffice("President");
+
+        // Add a candidate
+        electionVoting.addCandidate("Alice", officeId);
+
+        // Start voting for the office
+        electionVoting.startVoting(officeId, 60);
+
+        (
+            uint256 votingStartBefore,
+            uint256 votingEndBefore,
+            ,
+            string memory nameBefore,
+            uint256 candidateCountBefore
+        ) = electionVoting.getOfficeDetails(officeId);
+
+      
+
+        // Advance the block time by more than 60 minutes
+        vm.warp(block.timestamp + (61 * 1 minutes));
+
+        console.log("block.timestamp in test: %d", block.timestamp);
+
+        // Expect the VotingEnded event
+        vm.expectEmit(true, true, true, true);
+        emit ElectionVoting.VotingEnded(officeId, block.timestamp);
+
+        // End voting for the office
+        electionVoting.endVoting(officeId);
+
+        
+        (
+            uint256 votingStart,
+            uint256 votingEnd,
+            bool isVotingOpen,
+            string memory name,
+            uint256 candidateCount
+        ) = electionVoting.getOfficeDetails(officeId);
+
+        // Check the members of the Office struct
+        assertEq(votingStart, votingStartBefore);
+        assertEq(votingEnd, votingEndBefore);
+        assertFalse(isVotingOpen);
+        assertEq(name, nameBefore);
+        assertEq(candidateCount, candidateCountBefore);
+    }
+
+    function test_RevertEndVoting_VotingPeriodNotStarted() public {
+        // Add an office so we can start voting for it
+        uint256 officeId = electionVoting.addOffice("President");
+
+        // Add a candidate
+        electionVoting.addCandidate("Alice", officeId);
+
+        // Expect the VotingPeriodNotStarted custom error
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                ElectionVoting.VotingPeriodNotStarted.selector,
+                officeId
+            )
+        );
+        electionVoting.endVoting(officeId);
     }
 }
 

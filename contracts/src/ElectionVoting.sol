@@ -55,7 +55,7 @@ contract ElectionVoting is AccessControl {
     /// @notice Custom errors
     error VotingNotOpen(uint256 officeId);
     error VotingPeriodAlreadyStarted(uint256 officeId);
-    error VotingPeriodEnded(uint256 officeId);
+    error VotingPeriodNotStarted(uint256 officeId);
     error InvalidOfficeName();
     error OfficeDoesNotExist(uint256 officeId);
     error NoOfficesRegistered();
@@ -70,7 +70,7 @@ contract ElectionVoting is AccessControl {
         require(
             block.timestamp >= office.votingStart &&
                 block.timestamp <= office.votingEnd,
-            VotingPeriodEnded(_officeId)
+            VotingPeriodNotStarted(_officeId)
         );
         _;
     }
@@ -184,10 +184,11 @@ contract ElectionVoting is AccessControl {
     ) external onlyRole(DEFAULT_ADMIN_ROLE) {
         require(
             offices[_officeId].isVotingOpen,
-            VotingPeriodAlreadyStarted(_officeId)
+            VotingPeriodNotStarted(_officeId)
         );
 
-        if (offices[_officeId].votingEnd >= block.timestamp) {
+
+        if (offices[_officeId].votingEnd <= block.timestamp) {
             offices[_officeId].isVotingOpen = false;
             emit VotingEnded(_officeId, block.timestamp);
         }
