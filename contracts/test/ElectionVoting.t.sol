@@ -10,10 +10,12 @@ import {console} from "forge-std/console.sol";
 
 contract ElectionVotingTest is Test {
     ElectionVoting private electionVoting;
+    ElectionVotingHarness private electionVotingHarness;
 
     function setUp() public {
         // Deploy ElectionVoting contract
         electionVoting = new ElectionVoting();
+        electionVotingHarness = new ElectionVotingHarness();
     }
 
     function test_DeployerHasAdminRole() public view {
@@ -30,7 +32,7 @@ contract ElectionVotingTest is Test {
 
     function test_AddOffice() public {
         // Check for event
-        vm.expectEmit(true, false, false, true);
+        vm.expectEmit(true, true, true, true);
         emit ElectionVoting.OfficeAdded(1, "President");
 
         // Add an office and check the returned office ID
@@ -42,7 +44,6 @@ contract ElectionVotingTest is Test {
             uint256 votingStart,
             uint256 votingEnd,
             bool isVotingOpen,
-            bool isActive,
             string memory name,
             uint256 candidateCount
         ) = electionVoting.getOfficeDetails(officeId);
@@ -51,7 +52,6 @@ contract ElectionVotingTest is Test {
         assertEq(votingStart, 0);
         assertEq(votingEnd, 0);
         assertFalse(isVotingOpen);
-        assertTrue(isActive);
         assertEq(name, "President");
         assertEq(candidateCount, 0);
     }
@@ -66,7 +66,7 @@ contract ElectionVotingTest is Test {
         uint256 officeIdPresident = electionVoting.addOffice("President");
 
         // Expect the CandidateAdded event
-        vm.expectEmit(true, false, true, true);
+        vm.expectEmit(true, true, true, true);
         emit ElectionVoting.CandidateAdded(1, "Alice", officeIdPresident);
 
         // Add a candidate
@@ -85,20 +85,34 @@ contract ElectionVotingTest is Test {
 
     function test_RevertAddCandidate_VotingPeriodAlreadyStarted() public {
         // Add an office so candidate can run for it
-        uint256 officeIdPresident = electionVoting.addOffice("President");
+        uint256 officeIdPresident = electionVotingHarness.addOffice("President");
 
         // Start voting for the office
-        electionVoting.startVoting(officeIdPresident, 60);
+        electionVotingHarness.workaround_startVoting(officeIdPresident, 60);
 
         // Expect the VotingPeriodAlreadyStarted custom error
         vm.expectRevert(abi.encodeWithSignature("VotingPeriodAlreadyStarted(uint256)", officeIdPresident));
-        electionVoting.addCandidate("Alice", 1);
+        electionVotingHarness.addCandidate("Alice", 1);
     }
+   
 
     function test_RevertAddCandidate_OfficeDoesNotExistOrInactive() public {
         // Expect the OfficeDoesNotExistOrInactive custom error
-        vm.expectRevert(abi.encodeWithSignature("OfficeDoesNotExistOrInactive(uint256)", 1));
+        vm.expectRevert(abi.encodeWithSelector(ElectionVoting.OfficeDoesNotExist.selector, 1));
         electionVoting.addCandidate("Alice", 1);
     }
     
+}
+
+contract ElectionVotingHarness is ElectionVoting {
+    // Helper function for testing purposes to get around circular dependency in addCandidate and startVoting
+    function workaround_startVoting(uint256 _officeId, uint256 _durationInMinutes) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        Office storage office = offices[_officeId];
+        office.votingStart = block.timestamp;
+        office.votingEnd = block.timestamp + (_durationInMinutes * 1 minutes);
+        office.isVotingOpen = true;
+
+        emit VotingStarted(_officeId, office.votingStart, office.votingEnd);
+    }
+
 }

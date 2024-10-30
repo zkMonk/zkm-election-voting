@@ -9,7 +9,6 @@ contract ElectionVoting is AccessControl {
         uint256 votingStart;
         uint256 votingEnd;
         bool isVotingOpen;
-        bool isActive;
         string name;
         uint256[] candidateIds; // Array of candidate IDs for this office
     }
@@ -44,11 +43,12 @@ contract ElectionVoting is AccessControl {
     error VotingPeriodAlreadyStarted(uint256 officeId);
     error VotingPeriodEnded(uint256 officeId);
     error InvalidOfficeName();
-    error OfficeDoesNotExistOrInactive(uint256 officeId);
+    error OfficeDoesNotExist(uint256 officeId);
     error NoOfficesRegistered();
     error AlreadyVotedForOffice(uint256 officeId);
     error InvalidOfficeId(uint256 officeId);
     error CandidateNotRunningForOffice(uint256 candidateId, uint256 officeId);
+    error NoCandidatesForOffice(uint256 officeId);
 
     modifier votingIsOpen(uint256 _officeId) {
         Office memory office = offices[_officeId];
@@ -70,7 +70,6 @@ contract ElectionVoting is AccessControl {
             votingStart: 0,
             votingEnd: 0,
             isVotingOpen: false,
-            isActive: true,
             name: _name,
             candidateIds: new uint256[](0)
         });
@@ -80,10 +79,15 @@ contract ElectionVoting is AccessControl {
         nextOfficeId++;
     }
 
+    function removeOffice(uint256 _officeId) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        require(!offices[_officeId].isVotingOpen, VotingPeriodAlreadyStarted(_officeId));
+        delete offices[_officeId];
+    }
+
     function addCandidate(string memory _name, uint256 _officeId) external onlyRole(DEFAULT_ADMIN_ROLE) returns (uint256 candidateId) {
         Office memory office = offices[_officeId];
         require(!office.isVotingOpen, VotingPeriodAlreadyStarted(_officeId));
-        require(offices[_officeId].isActive, OfficeDoesNotExistOrInactive(_officeId));
+        require(bytes(office.name).length> 0, OfficeDoesNotExist(_officeId));
 
         candidates[nextCandidateId] = Candidate({name: _name, voteCount: 0, officeId: _officeId});
 
@@ -97,8 +101,9 @@ contract ElectionVoting is AccessControl {
     function startVoting(uint256 _officeId, uint256 _durationInMinutes) external onlyRole(DEFAULT_ADMIN_ROLE) {
         require(_officeId > 0, InvalidOfficeId(_officeId));
 
-        Office memory office = offices[_officeId];
+        Office storage office = offices[_officeId];
         require(!office.isVotingOpen, VotingPeriodAlreadyStarted(_officeId));
+        require(office.candidateIds.length > 0, NoCandidatesForOffice(_officeId));
       
 
         office.votingStart = block.timestamp;
@@ -115,7 +120,7 @@ contract ElectionVoting is AccessControl {
          * Check zk proof to see if the voter is eligible. Could be a modifier ***
          */
         require(!voters[msg.sender].hasVotedForOffice[_officeId], AlreadyVotedForOffice(_officeId));
-        require(offices[_officeId].isActive, InvalidOfficeId(_officeId));
+        require(bytes(offices[_officeId].name).length> 0, OfficeDoesNotExist(_officeId));
         require(candidates[_candidateId].officeId == _officeId, CandidateNotRunningForOffice(_candidateId, _officeId));
 
         voters[msg.sender].hasVotedForOffice[_officeId] = true;
@@ -129,7 +134,7 @@ contract ElectionVoting is AccessControl {
         view
         returns (uint256[] memory candidateIds, string[] memory names, uint256[] memory voteCounts)
     {
-        require(offices[_officeId].isActive, OfficeDoesNotExistOrInactive(_officeId));
+        require(bytes(offices[_officeId].name).length> 0, OfficeDoesNotExist(_officeId));
 
         uint256[] memory cIds = offices[_officeId].candidateIds;
         names = new string[](cIds.length);
@@ -150,7 +155,6 @@ contract ElectionVoting is AccessControl {
             uint256 votingStart,
             uint256 votingEnd,
             bool isVotingOpen,
-            bool isActive,
             string memory name,
             uint256 candidateCount
         )
@@ -160,7 +164,6 @@ contract ElectionVoting is AccessControl {
             office.votingStart,
             office.votingEnd,
             office.isVotingOpen,
-            office.isActive,
             office.name,
             office.candidateIds.length
         );
