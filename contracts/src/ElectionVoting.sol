@@ -17,7 +17,6 @@ contract ElectionVoting is AccessControl {
         uint256 voteCount;
         uint256 officeId; // Reference to which office they're running for
         string name;
-        uint256[] officeIds; // Array of office IDs this candidate is running for
     }
 
     struct Voter {
@@ -120,8 +119,7 @@ contract ElectionVoting is AccessControl {
         candidates[nextCandidateId] = Candidate({
             name: _name,
             voteCount: 0,
-            officeId: _officeId,
-            officeIds: new uint256[](0)
+            officeId: _officeId
         });
 
         offices[_officeId].candidateIds.push(nextCandidateId);
@@ -134,23 +132,24 @@ contract ElectionVoting is AccessControl {
     function removeCandidate(
         uint256 _candidateId
     ) external onlyRole(DEFAULT_ADMIN_ROLE) {
-        uint256[] memory officeIds = new uint256[](
-            candidates[_candidateId].officeIds.length
+        Candidate memory candidate = candidates[_candidateId];
+        uint256 officeId = candidate.officeId;
+        require(
+            !offices[officeId].isVotingOpen,
+            VotingPeriodAlreadyStarted(officeId)
         );
-        for (uint256 i = 0; i < officeIds.length; i++) {
-            uint256 officeId = candidates[_candidateId].officeIds[i];
-            uint256[] storage candidateIds = offices[officeId].candidateIds;
-            for (uint256 j = 0; j < candidateIds.length; j++) {
-                if (candidateIds[j] == _candidateId) {
-                    // if this is the last one, just pop it
-                    if (j != candidateIds.length - 1) {
-                        candidateIds.pop();
-                        break;
-                    } else {
-                        candidateIds[j] = candidateIds[candidateIds.length - 1];
-                        candidateIds.pop();
-                        break;
-                    }
+
+        // Remove candidate from office
+        uint256[] storage candidateIds = offices[officeId].candidateIds;
+        for (uint256 i = 0; i < candidateIds.length; i++) {
+            if (candidateIds[i] == _candidateId) {
+                if (i == candidateIds.length - 1) {
+                    candidateIds.pop();
+                    break;
+                } else {
+                    candidateIds[i] = candidateIds[candidateIds.length - 1];
+                    candidateIds.pop();
+                    break;
                 }
             }
         }
@@ -180,7 +179,9 @@ contract ElectionVoting is AccessControl {
         emit VotingStarted(_officeId, office.votingStart, office.votingEnd);
     }
 
-    function endVoting(uint256 _officeId) external onlyRole(DEFAULT_ADMIN_ROLE) {
+    function endVoting(
+        uint256 _officeId
+    ) external onlyRole(DEFAULT_ADMIN_ROLE) {
         require(
             offices[_officeId].isVotingOpen,
             VotingPeriodAlreadyStarted(_officeId)
@@ -190,7 +191,6 @@ contract ElectionVoting is AccessControl {
             offices[_officeId].isVotingOpen = false;
             emit VotingEnded(_officeId, block.timestamp);
         }
-       
     }
 
     function vote(
