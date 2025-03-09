@@ -1,70 +1,70 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.13;
 
-import {Test, console} from "forge-std/Test.sol";
-import {stdJson} from "forge-std/StdJson.sol";
-import {Verifier} from "../src/verifier.sol";
-import {StdUtils} from  "forge-std/StdUtils.sol";
-import {console}  from "forge-std/console.sol";
+import { Test, console } from "forge-std/Test.sol";
+import { stdJson } from "forge-std/StdJson.sol";
+import { Verifier } from "../src/verifier.sol";
+import { StdUtils } from "forge-std/StdUtils.sol";
+import { console } from "forge-std/console.sol";
 
 struct XX {
-	string a0 ;
-	string a1 ;
+    string a0;
+    string a1;
 }
 
 struct BS {
-	XX x;
-	XX y;
+    XX x;
+    XX y;
 }
 
 struct AR {
-	string x ;
-	string y ;
+    string x;
+    string y;
 }
 
 struct Commitment {
-	string x ;
-	string y ;
+    string x;
+    string y;
 }
 
 struct PROOF {
-	AR  ar ;
-	AR  krs;
-	BS  bs;
-	Commitment[1] commitments;
-    Commitment   commitmentPok;
+    AR ar;
+    AR krs;
+    BS bs;
+    Commitment[1] commitments;
+    Commitment commitmentPok;
 }
 
-struct ProofPublicData{
+struct ProofPublicData {
     PROOF proof;
     string[2] publicWitness;
 }
 
 struct PairingG1Point {
-   uint256 X;
-   uint256 Y;
+    uint256 X;
+    uint256 Y;
 }
 
 struct PairingG2Point {
-   uint256 [2]X;
-   uint256 [2]Y;
+    uint256[2] X;
+    uint256[2] Y;
 }
 
 struct VerifierProof {
-	PairingG1Point A ;
-	PairingG2Point B ;
-	PairingG1Point C ;
+    PairingG1Point A;
+    PairingG2Point B;
+    PairingG1Point C;
 }
 
 contract VerifierTest is Test {
     using stdJson for string;
 
     Verifier public verifier;
-    
+
     function setUp() public {
         verifier = new Verifier();
     }
-  
+
     function test_ValidProof() public {
         string memory root = vm.projectRoot();
         string memory path = string.concat(root, "/verifier/snark_proof_with_public_inputs.json");
@@ -74,7 +74,7 @@ contract VerifierTest is Test {
 
         bytes memory ProofAr = json.parseRaw(".Proof.Ar");
         proofData.proof.ar = abi.decode(ProofAr, (AR));
-        
+
         bytes memory ProofKrs = json.parseRaw(".Proof.Krs");
         proofData.proof.krs = abi.decode(ProofKrs, (AR));
 
@@ -88,16 +88,16 @@ contract VerifierTest is Test {
         proofData.proof.commitmentPok = abi.decode(ProofCommitment, (Commitment));
 
         bytes memory publicWitness = json.parseRaw(".PublicWitness");
-        string[] memory pubwit = abi.decode(publicWitness, ( string[]));
-        
-        uint  [2] memory input;
-         for (uint256 i = 0; i < pubwit.length; i++ ){
-            input[i]  =  vm.parseUint(pubwit[i]);
-	    }
+        string[] memory pubwit = abi.decode(publicWitness, (string[]));
+
+        uint256[2] memory input;
+        for (uint256 i = 0; i < pubwit.length; i++) {
+            input[i] = vm.parseUint(pubwit[i]);
+        }
 
         Verifier.Proof memory verifierProof;
 
-        verifierProof.a.X =  vm.parseUint(proofData.proof.ar.x);
+        verifierProof.a.X = vm.parseUint(proofData.proof.ar.x);
         verifierProof.a.Y = vm.parseUint(proofData.proof.ar.y);
 
         verifierProof.b.X[0] = vm.parseUint(proofData.proof.bs.x.a0);
@@ -109,14 +109,12 @@ contract VerifierTest is Test {
         verifierProof.c.X = vm.parseUint(proofData.proof.krs.x);
         verifierProof.c.Y = vm.parseUint(proofData.proof.krs.y);
 
-        uint256  [2] memory proofCommitment;
+        uint256[2] memory proofCommitment;
         proofCommitment[0] = vm.parseUint(proofData.proof.commitments[0].x);
-        proofCommitment[1] =vm.parseUint(proofData.proof.commitments[0].y);
+        proofCommitment[1] = vm.parseUint(proofData.proof.commitments[0].y);
 
-        bool ret = verifier.verifyTx(verifierProof, input, proofCommitment); 
-       
-         assert(ret == true); 
+        bool ret = verifier.verifyTx(verifierProof, input, proofCommitment);
 
+        assert(ret == true);
     }
-
 }
