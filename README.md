@@ -334,16 +334,18 @@ Follow the instructions in this README from the [Build the guest program ELF](#1
 
 - The ElectionVoting.sol `verify` function needs to be modified to call a verifier contract to verify a caller's voting eligibility.
 
-- In order to generate a verifier smart contract, a guest and host program need to be developed in Go or Rust. See the information in this README on guest and host programs and how to generate a verifier.sol contract. Note: the contracts/src/verifier.sol is not specific to this voting appliation. It existed in the template project that was forked.
+- In order to generate a verifier smart contract, a guest and host program need to be developed in Go or Rust. See the information in this README on guest and host programs and how to generate a verifier.sol contract. Note: the `contracts/src/verifier.sol` is not specific to this voting appliation. It existed in the template project that was forked.
 
 - The guest program that verifies a caller's eligibility to vote can be very simple. It could take an age as input and check that it is >= 18. It could in addition check that the caller's address is in a list of addresses that is "registered". This list could be a hardcoded a array or set. In a real situation, a voter would scan his/her government issued ID and the age would be provided as input to the guest program and a user's name or ID would be checked against a list of registered voters. The guest program for this application doesn't have to be that complex.
 
 - Create a host program
 
-- Follow the instructions above for the example programs to generate a proof and a verifier.sol that can then be callsed from the contracts/src/ElectionVoting.sol `verify` function.
+- Follow the instructions above for the example programs to generate a proof and a verifier.sol that can then be callsed from the `contracts/src/ElectionVoting.sol` `verify` function.
 
 - Add unit test cases
 
-- Get the `Rust project - latest` and `Clippy` jobs in .github/workflows/ci.yml working. These jobs were part of the forked [zkm-project-template](https://github.com/hswopeams/zkm-project-template/tree/main) repo and worked at one time.
+- Get the `Rust project - latest` and `Clippy` jobs in `.github/workflows/ci.yml` working. These jobs were part of the forked [zkm-project-template](https://github.com/hswopeams/zkm-project-template/tree/main) repo and worked at one time.
+
+- Add a frontend to all functions in the `contracts/src/ElectionVoting.sol` contract
 
 - Update the README
