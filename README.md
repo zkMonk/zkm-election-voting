@@ -1,8 +1,13 @@
 # ZKM Hackathon Project
 
-This project was forked and cloned from the [zkm-project-template](https://github.com/hswopeams/zkm-project-template/tree/main)
+This is an election voting example project. The idea is to show a simple way in which a ZK proof could be used to verify eligibility of a caller to vote for a candidate what is running for office.
+
+This repo was forked and cloned from the [zkm-project-template](https://github.com/hswopeams/zkm-project-template/tree/main). This README is, for the most part, the standard README from the forked `zkm-project-template` repo. It describes in general how to get the guest and host programs in the forked template repo running. The contracts/src/verifier.sol smart contract already existed in the `zkm-project-template` repo and is not specific to this project.
+
+The following sections have been added as specific to this repo:
 
 See this [section](#running-the-project-in-a-docker-container) for running the project in a Docker container.
+See this section for specifics about this voting projct.
 
 This is a template for creating an end-to-end ZKM project which can generate the EVM-Compatible proof and the on chain verification contract.
 
@@ -113,20 +118,21 @@ cd zkm-hackathon/host-program
 ```
 
 > [!NOTE]
+>
 > 1. The host program executes local proving when the environmental variable `ZKM_PROVER` is set to "local" and performs network proving when `ZKM_PROVER` is set to "network"
 
-> 2. There are two script programs available: run_local_proving.sh and run_network_proving.sh. These scripts facilitate the 
-generation of proofs on the local machine and over the proof network, respectively.
+> 2. There are two script programs available: run_local_proving.sh and run_network_proving.sh. These scripts facilitate the
+>    generation of proofs on the local machine and over the proof network, respectively.
 
-> 3. There are three guest programs(sha2-rust, sha2-go, mem-alloc-vec), each capable of generating a SNARK proof on a machine 
-equipped with an AMD EPYC 7R13 processor and 250GB of memory. The following will use sha2-rust as an example to demonstrate local and network proofs.
+> 3. There are three guest programs(sha2-rust, sha2-go, mem-alloc-vec), each capable of generating a SNARK proof on a machine
+>    equipped with an AMD EPYC 7R13 processor and 250GB of memory. The following will use sha2-rust as an example to demonstrate local and network proofs.
 
 > [!WARNING]
->  The environmental variable `SEG_SIZE` in the run-xxx_proving.sh affects the final proof generation. 
+> The environmental variable `SEG_SIZE` in the run-xxx_proving.sh affects the final proof generation.
 
->  The guest program's ELF with the input is split into segments according the SEG_SIZE, based on the cycle count.
+> The guest program's ELF with the input is split into segments according the SEG_SIZE, based on the cycle count.
 
->  When generating proofs on the local machine, if the log shows "!!!*******seg_num: 1", please reduce SEG_SIZE or increase the input. If generating proofs through the proof network, SEG_SIZE must be within the range [65536, 262144]. 
+> When generating proofs on the local machine, if the log shows "!!!**\*\*\***seg_num: 1", please reduce SEG_SIZE or increase the input. If generating proofs through the proof network, SEG_SIZE must be within the range [65536, 262144].
 
 ### Example : `sha2-rust`
 
@@ -228,11 +234,12 @@ The result proof and contract file will be in the contracts/verifier and contrac
 
 ### 4. Deploy the Verifier Contract
 
-If your system does not has Foundry, please install it:
+If your system does not have Foundry, please install it:
 
 ```sh
 curl -L https://foundry.paradigm.xyz | bash
 ```
+
 #### Verify the snark proof generateing in the step 3
 
 ```
@@ -255,9 +262,9 @@ Suite result: ok. 1 passed; 0 failed; 0 skipped; finished in 8.16ms (7.51ms CPU 
 Ran 1 test suite in 9.02ms (8.16ms CPU time): 1 tests passed, 0 failed, 0 skipped (1 total tests)
 ```
 
-#### Deploy the contract generateing in the step 3
+#### Deploy the contract generated in the step 3
 
-Please edit the following parameters according your aim blockchain.
+Please edit the following parameters according your target blockchain.
 
 ```
 forge script script/verifier.s.sol:VerifierScript --rpc-url https://eth-sepolia.g.alchemy.com/v2/RH793ZL_pQkZb7KttcWcTlOjPrN0BjOW --private-key df4bc5647fdb9600ceb4943d4adff3749956a8512e5707716357b13d5ee687d9
@@ -296,23 +303,45 @@ Sensitive values saved to: /mnt/data/zkm-hackathon/contracts/cache/verifier.s.so
 For more details, please refer to [this](contracts/README.md) guide.
 
 ## Running the project in a Docker container
+
 First, install docker on your host machine. See [here](https://docs.docker.com/engine/install/) for instructions.
 
-Cone the project using the command 
+Clone the project using the command
+
 ```sh
 git clone https://github.com/hswopeams/zkm-hackathon.git
 ```
 
 Then run the following command to build the image:
+
 ```
 docker build -t zkm/zkmips:compile .
 
 ```
 
 Then run this command to start a container using the image. This command will automatically open a terminal inside the container.
+
 ```
 docker run -it -v $(pwd):/zkm zkm/zkmips:compile
 ```
 
- The zkm-hackathon project directory will mounted to the zkm directory inside the container.
- Follow the instructions in this README from the [Build the guest program ELF](#1-build-the-guest-program-elf) section. Wherever the zkm-hackathon directory is specified, use the zkm directory in the container.
+The zkm-hackathon project directory will mounted to the zkm directory inside the container.
+Follow the instructions in this README from the [Build the guest program ELF](#1-build-the-guest-program-elf) section. Wherever the zkm-hackathon directory is specified, use the zkm directory in the container.
+
+## Election Voting dApp To Do
+
+- The `contracts/src/ElectionVoting.sol` has been completed, along with a test file (contracts/test/ElectionVoting.t.sol) and a deployment script that deploys this (contracts/script/Deploy.s.sol)
+
+- The ElectionVoting.sol `verify` function needs to be modified to call a verifier contract to verify a caller's voting eligibility.
+
+- In order to generate a verifier smart contract, a guest and host program need to be developed in Go or Rust. See the information in this README on guest and host programs and how to generate a verifier.sol contract. Note: the contracts/src/verifier.sol is not specific to this voting appliation. It existed in the template project that was forked.
+
+- The guest program that verifies a caller's eligibility to vote can be very simple. It could take an age as input and check that it is >= 18. It could in addition check that the caller's address is in a list of addresses that is "registered". This list could be a hardcoded a array or set. In a real situation, a voter would scan his/her government issued ID and the age would be provided as input to the guest program and a user's name or ID would be checked against a list of registered voters. The guest program for this application doesn't have to be that complex.
+
+- Create a host program
+
+- Follow the instructions above for the example programs to generate a proof and a verifier.sol that can then be callsed from the contracts/src/ElectionVoting.sol `verify` function.
+
+- Add unit test cases
+
+- Update the README

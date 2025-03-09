@@ -186,9 +186,7 @@ contract ElectionVoting is AccessControl {
         uint256 _officeId,
         uint256 _candidateId
     ) external votingIsOpen(_officeId) {
-        /**
-         * Add check zk proof to see if the voter is eligible. Could be a modifier ***
-         */
+        // TODO  Add check zk proof to see if the voter is eligible. Could be a modifier. Should call a verifier contract generated for this voting application
         console.log("msg.sender in vote function", msg.sender);
         console.log(
             "voters[msg.sender].hasVotedForOffice[_officeId] at start of vote function",
