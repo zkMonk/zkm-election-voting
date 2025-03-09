@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import {AccessControl} from "@openzeppelin/contracts/access/AccessControl.sol";
+import { AccessControl } from "@openzeppelin/contracts/access/AccessControl.sol";
 import "forge-std/console.sol";
 
 contract ElectionVoting is AccessControl {
@@ -65,7 +65,7 @@ contract ElectionVoting is AccessControl {
         require(bytes(_name).length > 0, InvalidOfficeName());
 
         offices[nextOfficeId] =
-            Office({votingStart: 0, votingEnd: 0, isVotingOpen: false, name: _name, candidateIds: new uint256[](0)});
+            Office({ votingStart: 0, votingEnd: 0, isVotingOpen: false, name: _name, candidateIds: new uint256[](0) });
 
         officeId = nextOfficeId;
         emit OfficeAdded(nextOfficeId, _name);
@@ -87,7 +87,7 @@ contract ElectionVoting is AccessControl {
         require(!office.isVotingOpen, VotingPeriodAlreadyStarted(_officeId));
         require(bytes(office.name).length > 0, OfficeDoesNotExist(_officeId));
 
-        candidates[nextCandidateId] = Candidate({name: _name, voteCount: 0, officeId: _officeId});
+        candidates[nextCandidateId] = Candidate({ name: _name, voteCount: 0, officeId: _officeId });
 
         offices[_officeId].candidateIds.push(nextCandidateId);
 
