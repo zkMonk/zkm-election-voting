@@ -1,4 +1,4 @@
-# ZKM Hackathon Project
+# ZKM Election Voting
 
 This is an election voting example project. The idea is to show a simple way in which a ZK proof could be used to verify eligibility of a caller to vote for a candidate what is running for office.
 
